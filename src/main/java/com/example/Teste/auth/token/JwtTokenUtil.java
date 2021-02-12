@@ -2,6 +2,7 @@ package com.example.Teste.auth.token;
 
 
 import com.example.Teste.auth.usuario.Usuario;
+import io.jsonwebtoken.*;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
@@ -22,6 +23,34 @@ public class JwtTokenUtil implements Serializable {
         Usuario userPrincipal = (Usuario) authentication.getPrincipal();
         Date hoje = new Date();
 
-        return
+        return Jwts.builder()
+                .setSubject((userPrincipal.getUsername()))
+                .setIssuedAt(hoje)
+                .setExpiration(new Date(hoje.getTime()+ EXPIRAEMMS))
+                .signWith(SignatureAlgorithm.HS512, secret)
+                .compact();
+    }
+
+    public String getUsernameFromToken(String token){
+        return Jwts.parser().setSigningKey(secret).parseClaimsJws(token)
+                .getBody().getSubject();
+    }
+
+    public boolean validateToken(String authToken) {
+        try {
+            Jwts.parser().setSigningKey(secret).parseClaimsJws(authToken);
+            return true;
+        } catch (SignatureException e) {
+            System.out.println("Assinatura JWT Inválida. " + e.getMessage());
+        } catch (MalformedJwtException e) {
+            System.out.println("Assinatura JWT inválida. " + e.getMessage());
+        } catch (ExpiredJwtException e) {
+            System.out.println("Assinatura JWL expirou. " + e.getMessage());
+        } catch (UnsupportedJwtException e) {
+            System.out.println("Este token não é suportado " + e.getMessage());
+        } catch (IllegalArgumentException e) {
+            System.out.println("JWT claim está vazio. " + e.getMessage());
+        }
+        return false;
     }
 }
